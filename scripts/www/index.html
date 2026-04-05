@@ -1,11 +1,676 @@
 <!DOCTYPE html>
-<html lang="en">
-    <head>
-        <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>PakePlus</title>
-    </head>
-    <body>
-        PakePlus
-    </body>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>口算练习</title>
+    <style>
+        :root {
+            --primary: #4a90e2;
+            --secondary: #67c23a;
+            --success: #67c23a;
+            --error: #f56c6c;
+            --text: #3c4c5d;
+            --bg: linear-gradient(180deg, #e8f5e9 0%, #c8e6c9 100%);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background: var(--bg);
+            background-attachment: fixed;
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            padding: 10vh 20px 20px 20px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 480px;
+            background-color: rgba(255, 255, 255, 0.9);
+            border-radius: 28px;
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.05);
+            padding: 35px 25px;
+            backdrop-filter: blur(10px);
+        }
+
+        .view { display: none; }
+        .view.active { display: block; }
+
+        button {
+            background: linear-gradient(135deg, #66bb6a, #43a047);
+            color: white;
+            border: none;
+            padding: 20px;
+            border-radius: 18px;
+            font-size: 1.3rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            width: 100%;
+            margin-bottom: 15px;
+            box-shadow: 0 4px 12px rgba(67, 160, 71, 0.2);
+        }
+
+        button:active {
+            transform: scale(0.97);
+            box-shadow: 0 2px 6px rgba(67, 160, 71, 0.2);
+        }
+
+        .btn-outline {
+            background: transparent;
+            color: #43a047;
+            border: 2px solid #66bb6a;
+            box-shadow: none;
+            margin-top: 15px;
+        }
+
+        .status-bar {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 25px;
+            font-size: 1.1rem;
+            color: #5d6d7e;
+            font-weight: 500;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background-color: rgba(0,0,0,0.05);
+            border-radius: 4px;
+            margin-bottom: 35px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: #66bb6a;
+            width: 0%;
+            transition: width 0.4s ease;
+        }
+
+        .problem-display {
+            position: relative;
+            text-align: center;
+            font-size: 3.5rem;
+            font-weight: 800;
+            margin: 30px 0;
+            color: #2e7d32;
+            min-height: 80px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: nowrap;
+        }
+
+        .problem-idx {
+            position: absolute;
+            top: -15px;
+            left: -5px;
+            font-size: 1.3rem;
+            color: #7f8c8d;
+            font-weight: 800;
+            background: rgba(0,0,0,0.05);
+            padding: 4px 12px;
+            border-radius: 8px;
+            border: 1px solid rgba(0,0,0,0.05);
+        }
+
+        .num-box {
+            width: 60px;
+            height: 75px;
+            background: #fff;
+            border: 3px solid #66bb6a;
+            border-radius: 12px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 2.2rem;
+            color: #2e7d32;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+        }
+
+        .answer-input-wrap {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        #answerInput {
+            width: 80%;
+            font-size: 2.7rem;
+            font-weight: 700;
+            text-align: center;
+            border: none;
+            border-bottom: 3px solid #a5d6a7;
+            border-radius: 0;
+            color: #2e7d32;
+            outline: none;
+            padding: 8px 0;
+            background: transparent;
+            transition: border-color 0.3s;
+            display: inline-block;
+        }
+
+        #answerInput:focus {
+            border-color: #43a047;
+        }
+
+        input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; }
+
+        .feedback {
+            text-align: center;
+            height: 40px;
+            font-weight: 700;
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+        }
+
+        /* 记忆挑战专用样式 */
+        .history-problem {
+            position: relative;
+            text-align: center;
+            font-size: 3.5rem;
+            font-weight: 800;
+            color: #90a4ae;
+            margin-bottom: 10px;
+            min-height: 80px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .problem-display.nback-style {
+            margin-top: 0;
+            color: #2e7d32;
+        }
+
+        /* 舒尔特表专用样式 */
+        .schulte-grid {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 8px;
+            margin: 20px 0;
+            background: #fff;
+            padding: 10px;
+            border-radius: 16px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+        }
+
+        .schulte-cell {
+            aspect-ratio: 1 / 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.2rem;
+            font-weight: 800;
+            background: #f8f9fa;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            user-select: none;
+            border: 2px solid transparent;
+        }
+
+        .schulte-cell:active {
+            transform: scale(0.9);
+            background: #e9ecef;
+        }
+
+        .schulte-cell.correct-flash {
+            background: #c8e6c9 !important;
+            color: #2e7d32 !important;
+            border-color: #66bb6a;
+        }
+
+        .schulte-cell.done {
+            pointer-events: none;
+            cursor: default;
+        }
+
+        .schulte-cell.error {
+            animation: shake 0.3s;
+            border-color: #f56c6c;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-4px); }
+            75% { transform: translateX(4px); }
+        }
+
+        .schulte-info {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 12px 15px;
+            background: rgba(74, 144, 226, 0.1);
+            border-radius: 12px;
+            margin-bottom: 15px;
+            min-height: 50px;
+        }
+
+        .schulte-target, .schulte-timer {
+            font-size: 1.4rem;
+            font-weight: 800;
+        }
+
+        .schulte-target { color: #1976d2; }
+        .schulte-timer { color: #f44336; }
+
+        @media (max-width: 480px) {
+            body { padding-top: 8vh; }
+            .container { padding: 30px 15px; border-radius: 24px; }
+            .problem-display { font-size: 3rem; gap: 5px; }
+            .num-box { width: 50px; height: 65px; font-size: 1.8rem; border-width: 2px; }
+            #answerInput { font-size: 2.2rem; padding: 6px 0; border-bottom-width: 2px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <!-- 主菜单 -->
+        <div id="menuView" class="view active">
+            <div class="menu-grid" style="margin-top: 20px;">
+                <button onclick="startStandardMode()">标准模式</button>
+                <button onclick="startChallengeMode()">无限模式</button>
+                <button onclick="startBullMode()">斗牛模式</button>
+                <button onclick="startSchulteMode()" style="background: linear-gradient(135deg, #42a5f5, #1e88e5);">舒尔特表</button>
+                <button onclick="startNBackMode()" style="background: linear-gradient(135deg, #ff9800, #f57c00);">记忆挑战</button>
+            </div>
+        </div>
+
+        <!-- 舒尔特表界面 -->
+        <div id="schulteView" class="view">
+            <div class="schulte-info">
+                <div id="schulteStartHint" class="schulte-target">请点击起始数字: <span id="startNumLabel">--</span></div>
+                <div id="schulteTimerArea" class="schulte-timer" style="display:none">时间: <span id="schulteTimerVal">60</span>s</div>
+            </div>
+            <div id="schulteGrid" class="schulte-grid"></div>
+            <button class="btn-outline" onclick="finishSchulte(false)" style="margin-top: 20px;">放弃测试</button>
+        </div>
+
+        <!-- 游戏运行界面 -->
+        <div id="gameView" class="view">
+            <div class="status-bar">
+                <div class="status-item"><span id="statusLabel">进度</span>: <span id="currentStatusVal" style="color:#2e7d32; font-weight:700;">0</span></div>
+                <div class="status-item"><span id="accuracyLabel">准确率</span>: <span id="currentAccuracy" style="color:#2e7d32; font-weight:700;">100%</span></div>
+            </div>
+            
+            <div id="standardProgress" class="progress-bar">
+                <div id="progressFill" class="progress-fill"></div>
+            </div>
+
+            <div id="historyProblemText" class="history-problem" style="display:none"></div>
+            <div class="problem-display" id="problemText"></div>
+            
+            <div class="answer-input-wrap">
+                <input type="number" id="answerInput" inputmode="numeric" pattern="[0-9]*" autocomplete="off">
+                <button id="nbackNextBtn" onclick="nextNBackStep()" style="display:none; margin-top: 10px;">下一题</button>
+            </div>
+
+            <div class="feedback" id="feedbackText"></div>
+
+            <button class="btn-outline" onclick="finishSession()">结束练习</button>
+        </div>
+    </div>
+
+    <script>
+        let gameState = {
+            mode: '', 
+            currentIdx: 0,
+            totalCount: 0,
+            correctCount: 0,
+            problems: [],
+            wrongRecords: [],
+            startTime: 0,
+            isAnswered: false,
+            currentResult: 0,
+            timerInterval: null
+        };
+
+        const views = ['menuView', 'gameView', 'schulteView'];
+
+        function switchView(viewId) {
+            views.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.classList.remove('active');
+            });
+            document.getElementById(viewId).classList.add('active');
+            
+            if(viewId !== 'gameView') {
+                document.getElementById('historyProblemText').style.display = 'none';
+            }
+
+            if(viewId === 'gameView') {
+                // 如果是记忆挑战前5题，焦点处理略过
+                if (gameState.mode === 'nback' && gameState.currentIdx < 5) {
+                    // Do nothing
+                } else {
+                    setTimeout(() => document.getElementById('answerInput').focus(), 150);
+                }
+            }
+        }
+
+        // --- 记忆挑战逻辑 ---
+        function startNBackMode() {
+            initGame('nback', 20); 
+            gameState.problems = [];
+            showNextProblem();
+            switchView('gameView');
+        }
+
+        function nextNBackStep() {
+            gameState.currentIdx++;
+            showNextProblem();
+        }
+
+        function generateNBackProblem() {
+            const isAdd = Math.random() > 0.5;
+            let n1, n2, ans;
+            if (isAdd) {
+                n1 = Math.floor(Math.random() * 9) + 1;
+                n2 = Math.floor(Math.random() * (10 - n1));
+                ans = n1 + n2;
+                return { text: `${n1} + ${n2} =`, answer: ans };
+            } else {
+                n1 = Math.floor(Math.random() * 11);
+                n2 = Math.floor(Math.random() * (n1 + 1));
+                ans = n1 - n2;
+                return { text: `${n1} - ${n2} =`, answer: ans };
+            }
+        }
+
+        // --- 舒尔特表逻辑 ---
+        function startSchulteMode() {
+            initGame('schulte', 36);
+            const startNum = Math.floor(Math.random() * 64);
+            gameState.startNum = startNum;
+            gameState.targetNum = startNum;
+            gameState.timeLeft = 60;
+            gameState.timerStarted = false;
+            
+            document.getElementById('startNumLabel').innerText = startNum;
+            document.getElementById('schulteTimerVal').innerText = gameState.timeLeft;
+            document.getElementById('schulteStartHint').style.display = 'block';
+            document.getElementById('schulteTimerArea').style.display = 'none';
+            
+            renderSchulteGrid(startNum);
+            switchView('schulteView');
+        }
+
+        function renderSchulteGrid(startNum) {
+            const grid = document.getElementById('schulteGrid');
+            grid.innerHTML = '';
+            let numbers = [];
+            for (let i = 0; i < 36; i++) numbers.push(startNum + i);
+            for (let i = numbers.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [numbers[i], numbers[j]] = [numbers[j], numbers[i]];
+            }
+            numbers.forEach(num => {
+                const cell = document.createElement('div');
+                cell.className = 'schulte-cell';
+                cell.innerText = num;
+                cell.style.color = getRandomColor();
+                cell.onclick = () => handleSchulteClick(num, cell);
+                grid.appendChild(cell);
+            });
+        }
+
+        function handleSchulteClick(num, cell) {
+            if (num === gameState.targetNum) {
+                if (!gameState.timerStarted) {
+                    gameState.timerStarted = true;
+                    document.getElementById('schulteStartHint').style.display = 'none';
+                    document.getElementById('schulteTimerArea').style.display = 'block';
+                    gameState.timerInterval = setInterval(() => {
+                        gameState.timeLeft--;
+                        document.getElementById('schulteTimerVal').innerText = gameState.timeLeft;
+                        if (gameState.timeLeft <= 0) finishSchulte(false);
+                    }, 1000);
+                }
+                cell.classList.add('correct-flash');
+                cell.classList.add('done');
+                setTimeout(() => cell.classList.remove('correct-flash'), 300);
+                gameState.correctCount++;
+                gameState.targetNum++;
+                if (gameState.correctCount >= 36) finishSchulte(true);
+            } else {
+                cell.classList.add('error');
+                setTimeout(() => cell.classList.remove('error'), 300);
+            }
+        }
+
+        function finishSchulte(isWin) {
+            if (gameState.timerInterval) clearInterval(gameState.timerInterval);
+            switchView('menuView');
+        }
+
+        function getRandomColor() {
+            const h = Math.floor(Math.random() * 360);
+            return `hsl(${h}, 70%, 45%)`;
+        }
+
+        function startStandardMode() {
+            initGame('standard', 10);
+            gameState.problems = generateStandardProblems(10);
+            showNextProblem();
+            switchView('gameView');
+        }
+
+        function startChallengeMode() {
+            initGame('challenge', 0);
+            document.getElementById('standardProgress').style.display = 'none';
+            showNextProblem();
+            switchView('gameView');
+            gameState.timerInterval = setInterval(() => {
+                const seconds = Math.floor((Date.now() - gameState.startTime) / 1000);
+                document.getElementById('currentStatusVal').innerText = seconds + 's';
+            }, 1000);
+        }
+
+        function startBullMode() {
+            initGame('bull', 10);
+            showNextProblem();
+            switchView('gameView');
+        }
+
+        function initGame(mode, count) {
+            if(gameState.timerInterval) clearInterval(gameState.timerInterval);
+            gameState.mode = mode;
+            gameState.totalCount = count;
+            gameState.currentIdx = 0;
+            gameState.correctCount = 0;
+            gameState.wrongRecords = [];
+            gameState.startTime = Date.now();
+            document.getElementById('standardProgress').style.display = count > 0 ? 'block' : 'none';
+            document.getElementById('statusLabel').innerText = (mode === 'challenge') ? '用时' : '进度';
+            document.getElementById('accuracyLabel').innerText = (mode === 'challenge') ? '已做' : '准确率';
+            document.getElementById('currentAccuracy').innerText = (mode === 'challenge') ? '0' : '100%';
+        }
+
+        function generateStandardProblems(count) {
+            let problems = [];
+            for (let i = 0; i < count; i++) {
+                const isAdd = Math.random() > 0.5;
+                let n1, n2, ans;
+                if (isAdd) {
+                    n1 = Math.floor(Math.random() * 90) + 1;
+                    n2 = Math.floor(Math.random() * (100 - n1)) + 1;
+                    ans = n1 + n2;
+                    problems.push({ text: `${n1} + ${n2} =`, answer: ans });
+                } else {
+                    n1 = Math.floor(Math.random() * 90) + 10;
+                    n2 = Math.floor(Math.random() * (n1 - 1)) + 1;
+                    ans = n1 - n2;
+                    problems.push({ text: `${n1} - ${n2} =`, answer: ans });
+                }
+            }
+            return problems;
+        }
+
+        function generateChallengeProblem() {
+            const numCount = Math.floor(Math.random() * 3) + 2; 
+            let result = Math.floor(Math.random() * 50) + 10;
+            let text = result.toString();
+            for (let i = 1; i < numCount; i++) {
+                const isAdd = Math.random() > 0.5;
+                let nextNum;
+                if (isAdd) {
+                    nextNum = Math.floor(Math.random() * (100 - result));
+                    result += nextNum;
+                    text += ` + ${nextNum}`;
+                } else {
+                    nextNum = Math.floor(Math.random() * result);
+                    result -= nextNum;
+                    text += ` - ${nextNum}`;
+                }
+            }
+            return { text: text + " =", answer: result };
+        }
+
+        function generateBullProblem() {
+            const pool = ['1','2','3','4','5','6','7','8','9','10','J','Q','K'];
+            const values = { 'J':1, 'Q':2, 'K':3 };
+            let selected = [];
+            let sum = 0;
+            for(let i=0; i<5; i++) {
+                let card = pool[Math.floor(Math.random() * pool.length)];
+                selected.push(card);
+                let val = values[card] || parseInt(card);
+                sum += val;
+            }
+            return { cards: selected, answer: sum % 10, text: selected.join(' ') };
+        }
+
+        function setProblemWithIdx(el, text, idx) {
+            el.innerHTML = `<span class="problem-idx">${idx}.</span>${text}`;
+        }
+
+        function showNextProblem() {
+            let prob;
+            const container = document.getElementById('problemText');
+            const historyContainer = document.getElementById('historyProblemText');
+            const input = document.getElementById('answerInput');
+            const nextBtn = document.getElementById('nbackNextBtn');
+            
+            container.innerHTML = '';
+            container.className = 'problem-display';
+            historyContainer.style.display = 'none';
+            input.style.display = 'inline-block';
+            nextBtn.style.display = 'none';
+
+            if (gameState.mode === 'standard') {
+                prob = gameState.problems[gameState.currentIdx];
+                setProblemWithIdx(container, prob.text, gameState.currentIdx + 1);
+                gameState.currentResult = prob.answer;
+            } else if (gameState.mode === 'bull') {
+                prob = generateBullProblem();
+                container.innerHTML = `<span class="problem-idx">${gameState.currentIdx + 1}.</span>`;
+                prob.cards.forEach(c => {
+                    let box = document.createElement('div');
+                    box.className = 'num-box';
+                    box.innerText = c;
+                    container.appendChild(box);
+                });
+                gameState.currentResult = prob.answer;
+            } else if (gameState.mode === 'nback') {
+                container.classList.add('nback-style');
+                prob = generateNBackProblem();
+                gameState.problems.push(prob);
+                
+                if (gameState.currentIdx < 5) {
+                    input.style.display = 'none';
+                    nextBtn.style.display = 'inline-block';
+                    setProblemWithIdx(container, prob.text, gameState.currentIdx + 1);
+                } else {
+                    historyContainer.style.display = 'flex';
+                    setProblemWithIdx(historyContainer, "? ? ? =", gameState.currentIdx - 4); 
+                    setProblemWithIdx(container, prob.text, gameState.currentIdx + 1);
+                    gameState.currentResult = gameState.problems[gameState.currentIdx - 5].answer;
+                    input.focus();
+                }
+            } else {
+                prob = generateChallengeProblem();
+                setProblemWithIdx(container, prob.text, gameState.currentIdx + 1);
+                gameState.currentResult = prob.answer;
+            }
+
+            gameState.currentText = prob.text;
+            if (gameState.totalCount > 0) {
+                document.getElementById('currentStatusVal').innerText = (gameState.currentIdx + 1) + '/' + gameState.totalCount;
+                const progress = (gameState.currentIdx / gameState.totalCount) * 100;
+                document.getElementById('progressFill').style.width = progress + '%';
+            }
+            input.value = '';
+            input.style.color = '#2e7d32';
+            document.getElementById('feedbackText').innerText = '';
+            gameState.isAnswered = false;
+        }
+
+        document.getElementById('answerInput').addEventListener('input', function() {
+            if (gameState.isAnswered || this.style.display === 'none') return;
+            const userValStr = this.value;
+            if (userValStr === "") return;
+            const targetLen = (gameState.mode === 'bull') ? 1 : gameState.currentResult.toString().length;
+            if (userValStr.length >= targetLen) {
+                handleSelection(parseInt(userValStr));
+            }
+        });
+
+        function handleSelection(userAns) {
+            gameState.isAnswered = true;
+            if (gameState.mode === 'challenge') gameState.totalCount++;
+            const isCorrect = userAns === gameState.currentResult;
+            const feedback = document.getElementById('feedbackText');
+            const input = document.getElementById('answerInput');
+
+            if (isCorrect) {
+                gameState.correctCount++;
+                feedback.innerText = "正确! ✨";
+                feedback.style.color = "#43a047";
+            } else {
+                gameState.wrongRecords.push({ q: gameState.currentText, a: gameState.currentResult, u: userAns });
+                feedback.innerText = (gameState.mode === 'bull') ? "再接再厉!" : `不对哦，是 ${gameState.currentResult}`;
+                feedback.style.color = "#e53935";
+                input.style.color = "#e53935";
+            }
+
+            if (gameState.mode !== 'challenge') {
+                const acc = Math.round((gameState.correctCount / (gameState.currentIdx + 1)) * 100);
+                document.getElementById('currentAccuracy').innerText = acc + '%';
+            } else {
+                document.getElementById('currentAccuracy').innerText = gameState.totalCount;
+            }
+
+            setTimeout(() => {
+                if (gameState.totalCount > 0) {
+                    gameState.currentIdx++;
+                    if (gameState.currentIdx < gameState.totalCount) showNextProblem();
+                    else finishSession();
+                } else showNextProblem();
+            }, 600);
+        }
+
+        function finishSession() {
+            if (gameState.timerInterval) clearInterval(gameState.timerInterval);
+            switchView('menuView');
+        }
+
+        switchView('menuView');
+    </script>
+</body>
 </html>
